@@ -17,6 +17,11 @@ class StockMovement extends Model
         'note',
     ];
 
+    protected $casts = [
+        'quantity' => 'integer',
+        'balance_after' => 'integer',
+    ];
+
     public function variant(): BelongsTo
     {
         return $this->belongsTo(ProductVariant::class, 'product_variant_id');

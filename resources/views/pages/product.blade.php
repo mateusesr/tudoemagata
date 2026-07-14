@@ -70,7 +70,36 @@
                     </p>
                 @endif
 
-                <form class="rounded-2xl border border-agata-200 bg-white p-5" x-data="{ variantId: {{ $defaultVariant?->id ?? 'null' }} }">
+                <form
+                    class="rounded-2xl border border-agata-200 bg-white p-5"
+                    x-data="{
+                        variantId: {{ $defaultVariant?->id ?? 'null' }},
+                        adding: false,
+                        message: null,
+                        async addToCart() {
+                            this.adding = true;
+                            this.message = null;
+                            try {
+                                const response = await fetch('{{ route('cart.items.store') }}', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                                    },
+                                    body: JSON.stringify({ product_variant_id: this.variantId, quantity: 1 }),
+                                });
+                                const data = await response.json();
+                                if (response.ok) {
+                                    window.location.href = '{{ route('cart.show') }}';
+                                } else {
+                                    this.message = data.message ?? 'Não foi possível adicionar ao carrinho.';
+                                }
+                            } finally {
+                                this.adding = false;
+                            }
+                        },
+                    }"
+                >
                     @if($product->variants->count() > 1)
                         <label class="text-sm font-medium text-agata-800">Escolha a variação</label>
                         <div class="mt-2 flex flex-wrap gap-2">
@@ -101,9 +130,16 @@
                     </div>
 
                     @if($defaultVariant && $defaultVariant->availableQuantity() > 0 && $defaultVariant->status === 'active')
-                        <button type="button" class="mt-4 w-full rounded-full bg-agata-800 px-5 py-3 text-center text-sm font-semibold text-white transition hover:bg-agata-900">
-                            Adicionar ao carrinho
+                        <button
+                            type="button"
+                            @click="addToCart()"
+                            :disabled="adding"
+                            class="mt-4 w-full rounded-full bg-agata-800 px-5 py-3 text-center text-sm font-semibold text-white transition hover:bg-agata-900 disabled:opacity-60"
+                        >
+                            <span x-show="!adding">Adicionar ao carrinho</span>
+                            <span x-show="adding">Adicionando...</span>
                         </button>
+                        <p x-show="message" x-text="message" class="mt-2 text-sm text-red-600"></p>
                     @else
                         <button type="button" disabled class="mt-4 w-full cursor-not-allowed rounded-full bg-agata-200 px-5 py-3 text-center text-sm font-semibold text-agata-500">
                             Esgotado

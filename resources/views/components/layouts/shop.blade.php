@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $title ?? 'Tudo em Ágata' }}</title>
     @if(isset($seoDescription))
         <meta name="description" content="{{ $seoDescription }}">
@@ -35,6 +36,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 104.65 4.65a7.5 7.5 0 0011.99 11.99z" />
                     </svg>
                 </a>
+                <a href="{{ route('cart.show') }}" class="hover:text-agata-900">Carrinho</a>
                 @auth
                     <a href="{{ route('dashboard') }}" class="hover:text-agata-900">Minha conta</a>
                 @else
@@ -75,5 +77,7 @@
             &copy; {{ date('Y') }} Tudo em Ágata. Todos os direitos reservados.
         </div>
     </footer>
+
+    @stack('scripts')
 </body>
 </html>

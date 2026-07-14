@@ -46,6 +46,8 @@ class GoogleAuthController extends Controller
             'avatar' => $googleUser->getAvatar(),
         ]);
 
+        $user->customer()->firstOrCreate([], ['customer_type' => 'retail']);
+
         Auth::login($user);
 
         return redirect()->intended(route('dashboard'));

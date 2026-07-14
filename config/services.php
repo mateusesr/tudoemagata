@@ -41,4 +41,15 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URI'),
     ],
 
+    'mercadopago' => [
+        'access_token' => env('MERCADOPAGO_ACCESS_TOKEN'),
+        'public_key' => env('MERCADOPAGO_PUBLIC_KEY'),
+    ],
+
+    'melhor_envio' => [
+        'base_url' => env('MELHOR_ENVIO_BASE_URL', 'https://sandbox.melhorenvio.com.br'),
+        'token' => env('MELHOR_ENVIO_TOKEN'),
+        'from_zip_code' => env('MELHOR_ENVIO_FROM_ZIP_CODE'),
+    ],
+
 ];
