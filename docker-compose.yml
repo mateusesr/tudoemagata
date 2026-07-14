@@ -1,0 +1,67 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: mvparejo_app
+    restart: unless-stopped
+    working_dir: /var/www
+    volumes:
+      - .:/var/www
+      - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
+    networks:
+      - mvparejo
+    depends_on:
+      - db
+
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: mvparejo_nginx
+    restart: unless-stopped
+    ports:
+      - "8091:80"
+    volumes:
+      - .:/var/www
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    networks:
+      - mvparejo
+    depends_on:
+      - app
+
+  db:
+    image: mysql:8.0
+    container_name: mvparejo_db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: mvparejo
+      MYSQL_USER: mvparejo
+      MYSQL_PASSWORD: secret
+      MYSQL_ROOT_PASSWORD: rootsecret
+    ports:
+      - "3308:3306"
+    volumes:
+      - dbdata:/var/lib/mysql
+    networks:
+      - mvparejo
+
+  node:
+    image: node:20-alpine
+    container_name: mvparejo_node
+    working_dir: /var/www
+    volumes:
+      - .:/var/www
+    networks:
+      - mvparejo
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    ports:
+      - "5173:5173"
+    profiles:
+      - assets
+
+networks:
+  mvparejo:
+    driver: bridge
+
+volumes:
+  dbdata:
+    driver: local
