@@ -40,7 +40,7 @@
                 @auth
                     <a href="{{ route('dashboard') }}" class="hover:text-agata-900">Minha conta</a>
                 @else
-                    <a href="{{ route('login') }}" class="hover:text-agata-900">Entrar</a>
+                    <a href="{{ route('login') }}?redirect_to={{ urlencode(url()->current()) }}" class="hover:text-agata-900">Entrar</a>
                 @endauth
             </nav>
         </div>
