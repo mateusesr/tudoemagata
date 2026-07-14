@@ -23,17 +23,20 @@
                                 R$ <span x-text="Number(item.unit_price).toFixed(2).replace('.', ',')"></span>
                             </p>
                         </div>
-                        <div class="flex items-center gap-3">
-                            <input
-                                type="number"
-                                min="0"
-                                :value="item.quantity"
-                                @change="updateQuantity(item.id, $event.target.value)"
-                                class="w-16 rounded-lg border border-agata-200 px-2 py-1 text-center text-sm"
-                            >
-                            <button @click="removeItem(item.id)" class="text-xs font-medium text-agata-500 hover:text-red-600">
-                                Remover
-                            </button>
+                        <div class="flex flex-col items-end gap-1">
+                            <div class="flex items-center gap-3">
+                                <input
+                                    type="number"
+                                    min="0"
+                                    :value="item.quantity"
+                                    @change="updateQuantity(item.id, $event.target.value)"
+                                    class="w-16 rounded-lg border border-agata-200 px-2 py-1 text-center text-sm"
+                                >
+                                <button @click="removeItem(item.id)" class="text-xs font-medium text-agata-500 hover:text-red-600">
+                                    Remover
+                                </button>
+                            </div>
+                            <p x-show="itemErrors[item.id]" x-text="itemErrors[item.id]" class="text-xs text-red-600"></p>
                         </div>
                     </div>
                 </template>
@@ -58,8 +61,11 @@
             return {
                 items: initialSummary.items,
                 total: Number(initialSummary.total),
+                itemErrors: {},
 
                 async updateQuantity(itemId, quantity) {
+                    this.itemErrors = { ...this.itemErrors, [itemId]: null };
+
                     const response = await fetch(`/carrinho/itens/${itemId}`, {
                         method: 'PATCH',
                         headers: {
@@ -72,6 +78,8 @@
                     if (response.ok) {
                         this.items = data.summary.items;
                         this.total = Number(data.summary.total);
+                    } else {
+                        this.itemErrors = { ...this.itemErrors, [itemId]: data.message ?? 'Não foi possível atualizar a quantidade.' };
                     }
                 },
 

@@ -28,13 +28,36 @@ class CheckoutController extends Controller
 
     public function show(): View
     {
-        $customer = auth()->user()->customer;
+        $customer = auth()->user()->customer()->firstOrCreate([], ['customer_type' => 'retail']);
         $cart = $this->cartService->current();
 
         return view('pages.checkout', [
             'addresses' => $customer->addresses,
             'summary' => $this->cartService->getSummary($cart),
         ]);
+    }
+
+    public function storeAddress(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'recipient_name' => ['required', 'string', 'max:255'],
+            'zip_code' => ['required', 'string', 'max:9'],
+            'street' => ['required', 'string', 'max:255'],
+            'number' => ['required', 'string', 'max:20'],
+            'complement' => ['nullable', 'string', 'max:255'],
+            'neighborhood' => ['required', 'string', 'max:255'],
+            'city' => ['required', 'string', 'max:255'],
+            'state' => ['required', 'string', 'size:2'],
+        ]);
+
+        $customer = auth()->user()->customer()->firstOrCreate([], ['customer_type' => 'retail']);
+
+        $address = $customer->addresses()->create([
+            ...$data,
+            'is_default' => $customer->addresses()->doesntExist(),
+        ]);
+
+        return response()->json(['address' => $address]);
     }
 
     public function quoteShipping(Request $request): JsonResponse
@@ -84,7 +107,7 @@ class CheckoutController extends Controller
             'shipping_deadline_days' => ['required', 'integer'],
         ]);
 
-        $customer = auth()->user()->customer;
+        $customer = auth()->user()->customer()->firstOrCreate([], ['customer_type' => 'retail']);
         $address = CustomerAddress::query()
             ->where('customer_id', $customer->id)
             ->findOrFail($data['customer_address_id']);

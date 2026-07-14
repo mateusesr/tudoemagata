@@ -8,11 +8,7 @@
         <div class="mt-8 rounded-2xl border border-agata-200 bg-white p-6">
             <h2 class="font-serif text-lg font-medium text-agata-900">Endereço de entrega</h2>
 
-            <template x-if="addresses.length === 0">
-                <p class="mt-2 text-sm text-agata-500">Você ainda não tem endereços cadastrados. Cadastre um endereço na área do cliente antes de continuar.</p>
-            </template>
-
-            <div class="mt-4 flex flex-col gap-2">
+            <div class="mt-4 flex flex-col gap-2" x-show="addresses.length > 0">
                 <template x-for="address in addresses" :key="address.id">
                     <label class="flex cursor-pointer items-start gap-3 rounded-xl border p-4 text-sm" :class="addressId === address.id ? 'border-agata-800 bg-agata-50' : 'border-agata-200'">
                         <input type="radio" :value="address.id" x-model.number="addressId" @change="quotes = []; selectedQuote = null" class="mt-1">
@@ -24,6 +20,35 @@
                     </label>
                 </template>
             </div>
+
+            <div x-show="!showAddressForm" class="mt-4">
+                <button type="button" @click="showAddressForm = true" class="text-sm font-semibold text-agata-800 hover:text-agata-900">
+                    + Adicionar novo endereço
+                </button>
+            </div>
+
+            <form x-show="showAddressForm" @submit.prevent="submitAddress()" class="mt-4 grid grid-cols-2 gap-3 rounded-xl border border-agata-200 p-4">
+                <input x-model="newAddress.recipient_name" type="text" placeholder="Nome do destinatário" class="col-span-2 rounded-lg border border-agata-200 px-3 py-2 text-sm" required>
+                <input x-model="newAddress.zip_code" type="text" placeholder="CEP" class="rounded-lg border border-agata-200 px-3 py-2 text-sm" required>
+                <input x-model="newAddress.number" type="text" placeholder="Número" class="rounded-lg border border-agata-200 px-3 py-2 text-sm" required>
+                <input x-model="newAddress.street" type="text" placeholder="Rua" class="col-span-2 rounded-lg border border-agata-200 px-3 py-2 text-sm" required>
+                <input x-model="newAddress.complement" type="text" placeholder="Complemento (opcional)" class="col-span-2 rounded-lg border border-agata-200 px-3 py-2 text-sm">
+                <input x-model="newAddress.neighborhood" type="text" placeholder="Bairro" class="rounded-lg border border-agata-200 px-3 py-2 text-sm" required>
+                <input x-model="newAddress.city" type="text" placeholder="Cidade" class="rounded-lg border border-agata-200 px-3 py-2 text-sm" required>
+                <input x-model="newAddress.state" type="text" placeholder="UF" maxlength="2" class="rounded-lg border border-agata-200 px-3 py-2 text-sm" required>
+
+                <p x-show="addressError" x-text="addressError" class="col-span-2 text-sm text-red-600"></p>
+
+                <div class="col-span-2 flex gap-2">
+                    <button type="submit" :disabled="savingAddress" class="rounded-full bg-agata-800 px-5 py-2 text-sm font-semibold text-white hover:bg-agata-900 disabled:opacity-60">
+                        <span x-show="!savingAddress">Salvar endereço</span>
+                        <span x-show="savingAddress">Salvando...</span>
+                    </button>
+                    <button type="button" @click="showAddressForm = false" class="rounded-full border border-agata-200 px-5 py-2 text-sm font-medium text-agata-700">
+                        Cancelar
+                    </button>
+                </div>
+            </form>
         </div>
 
         <div class="mt-6 rounded-2xl border border-agata-200 bg-white p-6" x-show="addressId">
@@ -104,6 +129,45 @@
                 shippingError: null,
                 submitting: false,
                 submitError: null,
+                showAddressForm: initialAddresses.length === 0,
+                savingAddress: false,
+                addressError: null,
+                newAddress: {
+                    recipient_name: '',
+                    zip_code: '',
+                    street: '',
+                    number: '',
+                    complement: '',
+                    neighborhood: '',
+                    city: '',
+                    state: '',
+                },
+
+                async submitAddress() {
+                    this.savingAddress = true;
+                    this.addressError = null;
+
+                    try {
+                        const response = await fetch('{{ route('checkout.addresses.store') }}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                            },
+                            body: JSON.stringify(this.newAddress),
+                        });
+                        const data = await response.json();
+                        if (response.ok) {
+                            this.addresses.push(data.address);
+                            this.addressId = data.address.id;
+                            this.showAddressForm = false;
+                        } else {
+                            this.addressError = data.message ?? 'Não foi possível salvar o endereço.';
+                        }
+                    } finally {
+                        this.savingAddress = false;
+                    }
+                },
 
                 async fetchShipping() {
                     const address = this.addresses.find(a => a.id === this.addressId);

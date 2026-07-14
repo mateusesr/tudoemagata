@@ -31,6 +31,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     Route::get('/checkout', [CheckoutController::class, 'show'])->name('checkout.show');
+    Route::post('/checkout/enderecos', [CheckoutController::class, 'storeAddress'])->name('checkout.addresses.store');
     Route::post('/checkout/frete', [CheckoutController::class, 'quoteShipping'])->name('checkout.shipping.quote');
     Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
 });
