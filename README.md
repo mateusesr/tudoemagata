@@ -1,58 +1,117 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Tudo em Ágata — Plataforma de Vendas (MVP Varejo)
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+E-commerce próprio (Laravel + Filament) da Tudo em Ágata, focado em venda varejo direta ao consumidor. Para entender as regras de negócio e o escopo completo, leia [`escopo.MD`](escopo.MD). Para o resumo operacional do estado atual do projeto, veja [`CLAUDE.md`](CLAUDE.md).
 
-## About Laravel
+## Stack
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- Laravel 13 (PHP 8.3)
+- Breeze (auth tradicional) + Socialite (login Google)
+- Filament (painel administrativo)
+- Blade + Tailwind CSS
+- MySQL 8
+- Docker / Docker Compose
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Rodando o projeto localmente (Docker)
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+Pré-requisitos: Docker e Docker Compose instalados.
 
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+### 1. Clonar e configurar o `.env`
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+git clone git@github.com:mateusesr/tudoemagata.git
+cd tudoemagata
+cp .env.example .env
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+O `.env.example` já vem configurado para o ambiente Docker deste projeto (`DB_HOST=db`, credenciais do MySQL do `docker-compose.yml`). Não é necessário alterar nada para rodar localmente.
 
-## Contributing
+### 2. Subir os containers
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```bash
+docker compose up -d
+```
 
-## Code of Conduct
+Isso sobe três serviços:
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+| Serviço            | Container         | Porta local |
+|--------------------|-------------------|-------------|
+| App (PHP-FPM)      | `mvparejo_app`    | —           |
+| Nginx              | `mvparejo_nginx`  | `8091`      |
+| MySQL 8            | `mvparejo_db`     | `3308`      |
 
-## Security Vulnerabilities
+O container `node` (para `npm run dev`) só sobe sob demanda, via profile `assets` (veja passo 5).
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+### 3. Instalar dependências PHP e gerar a chave da aplicação
 
-## License
+```bash
+docker exec mvparejo_app composer install
+docker exec mvparejo_app php artisan key:generate
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+### 4. Rodar as migrations e popular o banco com dados de exemplo
+
+```bash
+docker exec mvparejo_app php artisan migrate:fresh --seed
+```
+
+O seeder cria categorias (peças únicas, decoração, presentes, lavabo) e produtos de exemplo cobrindo os 4 tipos do catálogo: produto padrão, com variação, peça única e kit.
+
+### 5. Instalar dependências JS e compilar assets
+
+```bash
+docker exec mvparejo_app npm install
+docker exec mvparejo_app npm run build
+```
+
+Para desenvolvimento com hot-reload, use o container `node` do compose (profile `assets`):
+
+```bash
+docker compose --profile assets up -d node
+```
+
+Isso expõe o Vite dev server em `http://localhost:5173`.
+
+### 6. Criar um usuário administrador (Filament)
+
+```bash
+docker exec -it mvparejo_app php artisan make:filament-user
+```
+
+Siga o prompt interativo para definir nome, e-mail e senha.
+
+### 7. Acessar a aplicação
+
+- **Site público**: http://localhost:8091
+- **Login / cadastro**: http://localhost:8091/login
+- **Painel administrativo**: http://localhost:8091/admin/login
+
+### Comandos úteis do dia a dia
+
+Todos os comandos `artisan` e `composer` rodam dentro do container `mvparejo_app`:
+
+```bash
+docker exec mvparejo_app php artisan migrate
+docker exec mvparejo_app php artisan tinker
+docker exec mvparejo_app composer require <pacote>
+docker exec mvparejo_app php artisan test
+```
+
+Para parar os containers:
+
+```bash
+docker compose down
+```
+
+Para parar e apagar também os dados do banco (reset completo):
+
+```bash
+docker compose down -v
+```
+
+## Rodando sem Docker (PHP local)
+
+Se preferir rodar com PHP instalado localmente em vez de Docker, ajuste o `.env` para apontar para um MySQL acessível (ou SQLite, criando `database/database.sqlite` e usando `DB_CONNECTION=sqlite`), e siga os mesmos passos de `composer install`, `php artisan migrate --seed`, `npm install && npm run build`.
+
+## Estrutura do projeto
+
+Veja [`CLAUDE.md`](CLAUDE.md) para o estado atual do schema, regras de negócio não-negociáveis (peça única, reserva de estoque, snapshot de pedido, etc.) e o que ainda falta implementar.
