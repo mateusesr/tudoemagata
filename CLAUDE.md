@@ -46,7 +46,15 @@ Fase 0 (fundação) concluída:
 - **Locale da aplicação é `pt_BR`** (`APP_LOCALE`), com `en` de fallback. Traduções do Filament (panels/forms/tables/actions/notifications) publicadas em `lang/vendor/filament-*`. Toda tela do admin deve estar em português — Resources definem `getModelLabel()`/`getPluralModelLabel()`/`$navigationLabel` explicitamente (não confiar em inferência automática do Filament a partir do nome da classe).
 - Seeder (`database/seeders/DatabaseSeeder.php`) popula categorias (peças únicas, decoração, presentes, lavabo como subcategoria) e um produto de cada tipo (`standard`, `variant`, `unique`, `kit`), incluindo imagens e uma relação `combine_with`.
 - Ambiente local roda via Docker (`docker-compose.yml`): container `mvparejo_app` (PHP 8.3 + intl/gd/zip/bcmath — `intl` foi adicionado ao Dockerfile por exigência do Filament), `mvparejo_db` (MySQL 8, porta 3308), `mvparejo_nginx` (porta 8091). `.env` já aponta para `DB_HOST=db` (nome do serviço docker, não `127.0.0.1`). Rodar comandos artisan/composer via `docker exec mvparejo_app ...`. Setup completo documentado no README.
-- Falta ainda: páginas públicas (home/categoria/produto/busca), área do cliente, carrinho/checkout, integração Mercado Pago, `ShippingGateway`, lógica de reserva/liberação de estoque (models existem, falta a orquestração), Filament Resources de estoque/vendas externas/configurações.
+
+Fase 1 (catálogo público) concluída:
+- Páginas SSR (Blade, sem SPA) em `resources/views/pages/`: `home.blade.php` (hero, blocos de confiança, categorias, destaques), `category.blade.php`, `product.blade.php` (galeria, seleção de variante via Alpine, selos de peça única/imagem ilustrativa, "combine com"), `search.blade.php`. Rotas: `/`, `/categoria/{slug}`, `/produto/{slug}`, `/busca`.
+- Layout público em `resources/views/components/layouts/shop.blade.php` (precisa estar em `components/layouts/`, não em `views/layouts/`, para o Blade resolver `<x-layouts.shop>` — `views/layouts/` continua reservada para os layouts do Breeze/Filament).
+- Componentes reutilizáveis: `x-product-card`, `x-product-badge` (peça única/destaque/esgotado/imagem ilustrativa), `x-trust-badges`.
+- Paleta e tipografia do escopo (seção 6) aplicadas via `tailwind.config.js` (cores `agata`/`gold`, fonte serifada Cormorant Garamond para títulos + Figtree para o resto).
+- `ProductRepository`/`ProductService` (já existiam como esqueleto do Copilot, estendidos aqui) centralizam as queries do catálogo — sempre eager-loading `category`, `variants`, `images`.
+- Produtos sem imagem cadastrada mostram um estado "sem imagem" simples (decisão consciente: sem placeholder externo tipo Picsum, para não mascarar dados de catálogo incompletos).
+- Falta ainda: área do cliente, carrinho/checkout, integração Mercado Pago, `ShippingGateway`, lógica de reserva/liberação de estoque (models existem, falta a orquestração), Filament Resources de estoque/vendas externas/configurações.
 
 ## Preparação para atacado (não implementar agora, mas não travar)
 - Evitar nomes de tabela/coluna que assumam "cliente só pode ser varejo".
